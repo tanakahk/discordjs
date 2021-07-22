@@ -1,2 +1,2 @@
 # discordjs
- Estudos do discordjs
+ Estudos sobre o discordjs
