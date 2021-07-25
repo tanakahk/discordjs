@@ -1,30 +1,37 @@
+const fs = require('fs');
 const { prefix, token } = require('./config.json');
 const Discord = require('discord.js');
 const client = new Discord.Client();
+const commandFiles = fs.readdirSync('./commands').filter(file => file !== 'model.js' && file.endsWith('.js'));
 
-client.once('ready', () => {
-  console.log('Ready!');
-});
+client.commands = new Discord.Collection();
 
-client.login(token);
+for (const file of commandFiles) {
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.name, command);
+}
 
 client.on('message', message => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;
-  // const args = message.content.slice(prefix.length).trim().split(/ +/);
-  const args = message.content.slice(prefix.length).trim().split(' ');
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
   const command = args.shift().toLowerCase();
-  
-  
-  if (message.content === `${prefix}ping`) {
-    message.channel.send('Pong.');
-  } else if (command === 'args-info') {
-    if (!args.length) {
-      return message.channel.send(`Vc n passou nenhum argumento, ${message.author}!`)
-    } else if (args[0] === 'foo') {
-      return message.channel.send('bar')
+  if (!client.commands.has(command)) return;
+
+  try {
+    if (command === 'help') {
+      client.commands.get(command).execute(message, args, client.commands);
+    } else {
+      client.commands.get(command).execute(message, args);
     }
-    // message.channel.send(`Primeiro argumento: ${args[0]}`);
-    message.channel.send(`Argumentos: ${args}`)
+  } catch (error) {
+    console.error(error);
+    message.reply('houve um erro!');
   }
 });
 
+client.once('ready', () => {
+  console.log('Ready!');
+  // console.log('client.commands', client.commands);
+});
+
+client.login(token);
